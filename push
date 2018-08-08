@@ -1,1 +1,1 @@
-docker build -t payserver . && docker tag payserver moneygames/payserver && docker push moneygames/payserver
+docker build -t payserver . && docker tag payserver moneygames/payserver:$(git rev-parse --abbrev-ref) && docker push moneygames/payserver:$(git rev-parse --abbrev-ref)
