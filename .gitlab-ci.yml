@@ -15,12 +15,12 @@ build:
   stage: build
   script:
     - docker build -t payserver .
-    - docker tag payserver parthmehrotra/payserver
+    - docker tag payserver moneygames/payserver
     
 release:
   stage: release
   script:
-    - docker push parthmehrotra/payserver
+    - docker push moneygames/payserver
     
 deploy:
   stage: deploy
