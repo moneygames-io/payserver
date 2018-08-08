@@ -15,12 +15,12 @@ build:
   stage: build
   script:
     - docker build -t payserver .
-    - docker tag payserver moneygames/payserver
+    - docker tag payserver moneygames/payserver:$(git rev-parse --abbrev-ref HEAD)
     
 release:
   stage: release
   script:
-    - docker push moneygames/payserver
+    - docker push moneygames/payserver:$(git rev-parse --abbrev-ref HEAD)
     
 deploy:
   stage: deploy
