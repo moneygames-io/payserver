@@ -15,14 +15,16 @@ build:
   stage: build
   script:
     - docker build -t payserver .
-    - docker tag payserver moneygames/payserver:$(git rev-parse --abbrev-ref HEAD)
+    - docker tag payserver moneygames/payserver:$CI_COMMIT_REF_NAME
     
 release:
   stage: release
   script:
-    - docker push moneygames/payserver:$(git rev-parse --abbrev-ref HEAD)
+    - docker push moneygames/payserver:$CI_COMMIT_REF_NAME
     
 deploy:
   stage: deploy
+  only:
+    - master
   script:
     - ssh root@142.93.11.143 'cd main && ./restart'
