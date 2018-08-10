@@ -39,7 +39,6 @@ func NewPaymentProcessor() *PaymentProcessor {
 }
 
 func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
-	fmt.Println("Player joined")
 	wallet := p.GenerateWallet()
 	conn.WriteJSON(wallet)
 
@@ -59,8 +58,9 @@ func (p *PaymentProcessor) SendToken(conn *websocket.Conn, isPaid chan bool) {
 	select {
 	case done := <-isPaid:
 		if done {
-			fmt.Println("got money")
-			conn.WriteJSON(p.GenerateToken())
+			token := p.GenerateToken()
+			p.RedisClient.Set(token["token"], "paid", 0)
+			conn.WriteJSON(token)
 			conn.Close()
 		}
 	}
