@@ -6,10 +6,13 @@ import (
 	"net/http"
 )
 
+var paymentProcessor *PaymentProcessor
+
 func main() {
 	fmt.Println("Payserver Started")
-	http.HandleFunc("/ws", wsHandler)
+	paymentProcessor = NewPaymentProcessor()
 
+	http.HandleFunc("/ws", wsHandler)
 	panic(http.ListenAndServe(":7000", nil))
 }
 
@@ -18,7 +21,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
 	}
-	if err := conn.WriteJSON(map[string]string{ "bitcoinAddress" : "3LVnhdermwHoWzEEteKvXqG4rUXn4Wuy4S" } ); err != nil {
-		fmt.Println(err)
-	}
+
+	paymentProcessor.NewCustomer(conn)
 }
