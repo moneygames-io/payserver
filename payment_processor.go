@@ -14,6 +14,13 @@ type PaymentProcessor struct {
 	RedisClient *redis.Client
 }
 
+type Player struct{
+	Id string,
+	Status string,
+	PaymentAddress string,
+	PersonalAddress string
+}
+
 func NewPaymentProcessor() *PaymentProcessor {
 	var client *redis.Client
 	for {
@@ -39,28 +46,34 @@ func NewPaymentProcessor() *PaymentProcessor {
 }
 
 func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
-	wallet := p.GenerateWallet()
-	conn.WriteJSON(wallet)
+	var player = &Player{
+		Id: p.GenerateToken(8),
+		Status: "Unpaid",
+		PaymentAddress: p.GenerateWallet()
+	}
+	conn.WriteJSON(map[string]string{"bitcoinAddress": player.PaymentAddress})
+	p.RedisClient.HSet(player.Id, "status", player.Status, 0)
+	p.RedisClient.HSet(player.Id, "paymentAddress", player.PaymentAddress, 0)
 
 	target := p.CurrentCost()
 	isPaid := make(chan bool)
 
-	go p.CheckBalance("", target, isPaid)
-	go p.SendToken(conn, isPaid)
+	go p.CheckBalance(player.PaymentAddress, target, isPaid)
+	go p.SendToken(conn, isPaid, )
 }
 
-func (p *PaymentProcessor) CheckBalance(wallet string, target float64, isPaid chan bool) {
+func (p *PaymentProcessor) CheckBalance(player *Player, target float64, isPaid chan bool) {
 	time.Sleep(time.Duration(rand.Intn(10)*1000) * time.Millisecond)
+	player.Status = "paid"
+	p.RedisClient.HSet(player.Id, "status", player.Status, 0)
 	isPaid <- true
 }
 
-func (p *PaymentProcessor) SendToken(conn *websocket.Conn, isPaid chan bool) {
+func (p *PaymentProcessor) SendToken(player *Player, conn *websocket.Conn, isPaid chan bool) {
 	select {
 	case done := <-isPaid:
 		if done {
-			token := p.GenerateToken()
-			p.RedisClient.Set(token["token"], "paid", 0)
-			conn.WriteJSON(token)
+			conn.WriteJSON(map[string]string{"token": player.Status)
 			conn.Close()
 		}
 	}
@@ -70,17 +83,17 @@ func (p *PaymentProcessor) CurrentCost() float64 {
 	return 0.0001 // roughly $0.60
 }
 
-func (p *PaymentProcessor) GenerateToken() map[string]string {
+func (p *PaymentProcessor) GenerateToken(length int) map[string]string {
 	rand.Seed(time.Now().UnixNano())
-	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	charRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
-	b := make([]rune, 8)
+	b := make([]rune, length)
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		b[i] = charRunes[rand.Intn(len(charRunes))]
 	}
-	return map[string]string{"token": string(b)}
+	return string(b)
 }
 
 func (p *PaymentProcessor) GenerateWallet() map[string]string {
-	return map[string]string{"bitcoinAddress": "3LVnhdermwHoWzEEteKvXqG4rUXn4Wuy4S"}
+	return "3LVnhdermwHoWzEEteKvXqG4rUXn4Wuy4S"
 }
