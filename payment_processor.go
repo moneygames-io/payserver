@@ -48,7 +48,7 @@ func NewPaymentProcessor() *PaymentProcessor {
 func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
 	var player = &Player{
 		Id: p.GenerateToken(8),
-		Status: "Unpaid",
+		Status: "unpaid",
 		PaymentAddress: p.GenerateWallet(),
 	}
 	conn.WriteJSON(map[string]string{"bitcoinAddress": player.PaymentAddress})
