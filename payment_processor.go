@@ -52,20 +52,20 @@ func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
 		PaymentAddress: p.GenerateWallet(),
 	}
 	conn.WriteJSON(map[string]string{"bitcoinAddress": player.PaymentAddress})
-	p.RedisClient.HSet(player.Id, "status", player.Status, 0)
-	p.RedisClient.HSet(player.Id, "paymentAddress", player.PaymentAddress, 0)
+	p.RedisClient.HSet(player.Id, "status", player.Status)
+	p.RedisClient.HSet(player.Id, "paymentAddress", player.PaymentAddress)
 
 	target := p.CurrentCost()
 	isPaid := make(chan bool)
 
-	go p.CheckBalance(player.PaymentAddress, target, isPaid)
-	go p.SendToken(conn, isPaid, )
+	go p.CheckBalance(player, target, isPaid)
+	go p.SendToken(player, conn, isPaid)
 }
 
 func (p *PaymentProcessor) CheckBalance(player *Player, target float64, isPaid chan bool) {
 	time.Sleep(time.Duration(rand.Intn(10)*1000) * time.Millisecond)
 	player.Status = "paid"
-	p.RedisClient.HSet(player.Id, "status", player.Status, 0)
+	p.RedisClient.HSet(player.Id, "status", player.Status)
 	isPaid <- true
 }
 
@@ -83,7 +83,7 @@ func (p *PaymentProcessor) CurrentCost() float64 {
 	return 0.0001 // roughly $0.60
 }
 
-func (p *PaymentProcessor) GenerateToken(length int) map[string]string {
+func (p *PaymentProcessor) GenerateToken(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	charRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
@@ -94,6 +94,6 @@ func (p *PaymentProcessor) GenerateToken(length int) map[string]string {
 	return string(b)
 }
 
-func (p *PaymentProcessor) GenerateWallet() map[string]string {
+func (p *PaymentProcessor) GenerateWallet() string {
 	return "3LVnhdermwHoWzEEteKvXqG4rUXn4Wuy4S"
 }
