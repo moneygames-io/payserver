@@ -15,7 +15,7 @@ type PaymentProcessor struct {
 }
 
 type Player struct{
-	Id string
+	Token string
 	Status string
 	PaymentAddress string
 	PersonalAddress string
@@ -47,13 +47,13 @@ func NewPaymentProcessor() *PaymentProcessor {
 
 func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
 	var player = &Player{
-		Id: p.GenerateToken(8),
+		Token: p.GenerateToken(8),
 		Status: "unpaid",
 		PaymentAddress: p.GenerateWallet(),
 	}
 	conn.WriteJSON(map[string]string{"bitcoinAddress": player.PaymentAddress})
-	p.RedisClient.HSet(player.Id, "status", player.Status)
-	p.RedisClient.HSet(player.Id, "paymentAddress", player.PaymentAddress)
+	p.RedisClient.HSet(player.Token, "status", player.Status)
+	p.RedisClient.HSet(player.Token, "paymentAddress", player.PaymentAddress)
 
 	target := p.CurrentCost()
 	isPaid := make(chan bool)
@@ -65,7 +65,7 @@ func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
 func (p *PaymentProcessor) CheckBalance(player *Player, target float64, isPaid chan bool) {
 	time.Sleep(time.Duration(rand.Intn(10)*1000) * time.Millisecond)
 	player.Status = "paid"
-	p.RedisClient.HSet(player.Id, "status", player.Status)
+	p.RedisClient.HSet(player.Token, "status", player.Status)
 	isPaid <- true
 }
 
@@ -73,7 +73,7 @@ func (p *PaymentProcessor) SendToken(player *Player, conn *websocket.Conn, isPai
 	select {
 	case done := <-isPaid:
 		if done {
-			conn.WriteJSON(map[string]string{"token": player.Status})
+			conn.WriteJSON(map[string]string{"token": player.Token})
 			conn.Close()
 		}
 	}
