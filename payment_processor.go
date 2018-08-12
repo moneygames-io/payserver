@@ -15,9 +15,9 @@ type PaymentProcessor struct {
 }
 
 type Player struct{
-	Id string,
-	Status string,
-	PaymentAddress string,
+	Id string
+	Status string
+	PaymentAddress string
 	PersonalAddress string
 }
 
@@ -49,7 +49,7 @@ func (p *PaymentProcessor) NewCustomer(conn *websocket.Conn) {
 	var player = &Player{
 		Id: p.GenerateToken(8),
 		Status: "Unpaid",
-		PaymentAddress: p.GenerateWallet()
+		PaymentAddress: p.GenerateWallet(),
 	}
 	conn.WriteJSON(map[string]string{"bitcoinAddress": player.PaymentAddress})
 	p.RedisClient.HSet(player.Id, "status", player.Status, 0)
@@ -73,7 +73,7 @@ func (p *PaymentProcessor) SendToken(player *Player, conn *websocket.Conn, isPai
 	select {
 	case done := <-isPaid:
 		if done {
-			conn.WriteJSON(map[string]string{"token": player.Status)
+			conn.WriteJSON(map[string]string{"token": player.Status})
 			conn.Close()
 		}
 	}
