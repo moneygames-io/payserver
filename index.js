@@ -1,17 +1,20 @@
-//import the bcoin module and set it to testnet
-const bcoin = require('bcoin').set('testnet');
-const WalletDB = bcoin.WalletDB;
-const WalletKey = bcoin.wallet.WalletKey;
-const KeyRing = bcoin.keyring;
-const Mnemonic = bcoin.hd.Mnemonic;
-const HD = bcoin.hd;
+let id;
+id="primary"
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-walletExample().catch(console.error.bind(console));
-
-async function walletExample() {
-    //for demonstration purposes, we'll be creating a temporary wallet in memory
-    const wdb = new WalletDB({ db: 'memory' });
-    await wdb.open();
-	const wallet = await wdb.create();
-	console.log(wallet);
+const walletOptions = {
+  port: 18332,
+  host: "bcoin.moneygames.io", 
+  network: network.type,
+  apiKey: 'hunterkey'
 }
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
+(async () => {
+  const result = await wallet.getInfo();
+  console.log(result);
+})();
