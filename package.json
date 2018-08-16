@@ -4,7 +4,8 @@
   "description": "my first socket.io app",
   "dependencies": {
     "bcoin": "^1.0.2",
-    "redis": "^2.8.0"
+    "redis": "^2.8.0",
+    "ws": "^6.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
