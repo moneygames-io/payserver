@@ -3,7 +3,7 @@ import { Network } from 'bcoin';
 import { redis } from 'redis';
 import WebSocket from 'ws';
 
-import Client from './client'
+import Client from './client';
 
 class Payserver {
     constructor() {
@@ -13,8 +13,8 @@ class Payserver {
     }
 
     newCustomer(connection) {
-        let token = this.generateNewToken(8)
-        this.clients[token] = new Client(connection, token)
+        let token = this.generateNewToken(8);
+        this.clients[token] = new Client(connection, token, this.getRate());
     }
 
     generateNewToken(n) {
@@ -27,24 +27,9 @@ class Payserver {
         return text;
     }
 
-    bcoin() {
-        let network = Network.get('regtest');
-
-        let walletOptions = {
-            port: 18332,
-            host: "bcoin.moneygames.io",
-            network: network.type,
-            apiKey: 'hunterkey'
-        }
-
-        let walletClient = new WalletClient(walletOptions);
-        let wallet = walletClient.wallet("primary");
-
-        (async () => {
-            const result = await wallet.getInfo();
-            console.log(result);
-        })();
+    getRate() {
+        return 15000;
     }
 }
 
-new Payserver()
+new Payserver();
