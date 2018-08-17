@@ -1,7 +1,6 @@
 import { WalletClient } from 'bclient';
 import { Network } from 'bcoin';
 import { redis } from 'redis';
-
 import WebSocket from 'ws';
 
 import Client from './client'
