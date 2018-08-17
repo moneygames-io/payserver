@@ -15,6 +15,6 @@ RUN node -v
 COPY src ./src
 RUN npx babel src --out-dir lib --source-maps-inline
 
-EXPOSE 9000
+EXPOSE 7000
 
-CMD ["node", "lib/index.js"]
+CMD ["node", "lib/payserver.js"]
