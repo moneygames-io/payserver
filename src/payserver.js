@@ -1,12 +1,14 @@
 import { WalletClient } from 'bclient';
 import { Network } from 'bcoin';
-import { redis } from 'redis';
 import WebSocket from 'ws';
+import redis from 'redis';
 
 import Client from './client';
 
 class Payserver {
     constructor() {
+        this.redisClient = redis.createClient(6379, 'redis-players');
+        console.log(this.redisClient);
         this.server = new WebSocket.Server({ port: 7000 });
         this.clients = {};
         this.server.on('connection', this.newCustomer.bind(this));
@@ -14,7 +16,7 @@ class Payserver {
 
     newCustomer(connection) {
         let token = this.generateNewToken(8);
-        this.clients[token] = new Client(connection, token, this.getRate());
+        this.clients[token] = new Client(connection, token, this.getRate(), this.redisClient);
     }
 
     generateNewToken(n) {
@@ -32,4 +34,13 @@ class Payserver {
     }
 }
 
-new Payserver();
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+(async () => {
+    console.log("waiting 2 seconds")
+    await sleep(2000);
+    new Payserver();
+    console.log("starting server")
+})()

@@ -1,17 +1,18 @@
 import { WebSocket } from 'ws'
 import { WalletClient } from 'bclient'
 import { Network } from 'bcoin'
-import { redis } from 'redis'
 
 export default class Client {
-    constructor(conn, token, rate) {
+    constructor(conn, token, rate, redisClient) {
         this.connection = conn;
         this.token = token;
 
         this.connection.on('message', this.message.bind(this));
+        console.log('reached');
         this.assignAccount();
         this.rate = rate;
         this.pollBalance();
+        this.redisClient = redisClient;
     }
 
     message(message) {
@@ -36,6 +37,9 @@ export default class Client {
             const result = await wallet.createAccount(this.token, options);
             this.address = result.receiveAddress;
             this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
+            this.connection.send(JSON.stringify({ 'token': this.token }));
+            this.redisClient.hset(this.token, "status", "unpaid");
+            this.redisClient.hset(this.token, "paymentAddress", this.address);
         })()
     }
 
@@ -61,6 +65,7 @@ export default class Client {
                 const result = await wallet.getAccount(this.token);
                 if (result) {
                     if (result.balance.unconfirmed >= 15000) {
+                        this.redisClient.hset(this.token, 'status', 'paid');
                         this.connection.send(JSON.stringify({ 'status': 'paid'}));
                         return;
                     }
