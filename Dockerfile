@@ -1,11 +1,20 @@
-FROM golang:1.8
+FROM ubuntu:16.04
 
-WORKDIR /go/src/app
-COPY . .
+RUN apt-get update && apt-get -y install curl
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN apt-get -y install nodejs
 
-RUN go get -d -v ./...
-RUN go install -v ./...
+WORKDIR app
+
+COPY package.json .
+COPY .babelrc .
+
+RUN npm i
+RUN node -v
+
+COPY src ./src
+RUN npx babel src --out-dir lib --source-maps-inline
 
 EXPOSE 7000
 
-CMD ["app"]
+CMD ["node", "lib/payserver.js"]
