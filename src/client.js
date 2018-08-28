@@ -47,6 +47,12 @@ export default class Client {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    async pollBalance2() {
+        await this.sleep(2000);
+        this.redisClient.hset(this.token, 'status', 'paid');
+        this.connection.send(JSON.stringify({ 'status': 'paid'}));
+    }
+
     pollBalance() {
         const network = Network.get('testnet');
 
