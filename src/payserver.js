@@ -8,7 +8,6 @@ import Client from './client';
 class Payserver {
     constructor() {
         this.redisClient = redis.createClient(6379, 'redis-players');
-        console.log(this.redisClient);
         this.server = new WebSocket.Server({ port: 7000 });
         this.clients = {};
         this.server.on('connection', this.newCustomer.bind(this));
@@ -39,8 +38,5 @@ class Payserver {
     }
 
 (async () => {
-    console.log("waiting 2 seconds")
-    await sleep(2000);
     new Payserver();
-    console.log("starting server")
 })()
