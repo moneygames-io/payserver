@@ -7,7 +7,7 @@ export default class Client {
         this.connection = conn;
         this.token = token;
 
-        this.connection.on('message', this.message.bind(this));
+        this.connection.on('message', this.newWinner.bind(this));
         console.log('reached');
         this.assignAccount();
         this.rate = rate;
@@ -15,8 +15,8 @@ export default class Client {
         this.redisClient = redisClient;
     }
 
-    message(message) {
-        console.log(message);
+    newWinner(data) {
+        // verify data['token'] data['address'] and update redis once paid
     }
 
     assignAccount() {
