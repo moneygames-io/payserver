@@ -21,7 +21,7 @@ export default class Client {
         var transactionId = 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
         var response = {
           'token': this.token,
-          'pot': data['pot'],
+          'pot': 100,// TODO get this value from redis 
           'destinationAddress': data['destinationAddress'],
           'transactionId': 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
         }
