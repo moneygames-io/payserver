@@ -11,7 +11,7 @@ export default class Client {
         console.log('reached');
         this.assignAccount();
         this.rate = rate;
-        this.pollBalance2();
+        this.pollBalance();
         this.redisClient = redisClient;
     }
 
