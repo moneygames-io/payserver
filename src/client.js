@@ -11,12 +11,23 @@ export default class Client {
         console.log('reached');
         this.assignAccount();
         this.rate = rate;
-        this.pollBalance();
+        this.pollBalance2();
         this.redisClient = redisClient;
     }
 
-    newWinner(data) {
+    newWinner(response) {
         // verify data['token'] data['address'] and update redis once paid
+        var data = JSON.parse(response)
+        var transactionId = 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
+        var response = {
+          'token': this.token,
+          'pot': data['pot'],
+          'destinationAddress': data['destinationAddress'],
+          'transactionId': 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
+        }
+        console.log(data)
+        console.log(response)
+        this.connection.send(JSON.stringify(response));
     }
 
     assignAccount() {
