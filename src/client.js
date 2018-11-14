@@ -1,56 +1,84 @@
 import { WebSocket } from 'ws'
 import { WalletClient } from 'bclient'
 import { Network } from 'bcoin'
+import { promisify } from 'util'
+
 
 export default class Client {
-    constructor(conn, token, rate, redisClient) {
+    constructor(conn, token, rate, redisClientPlayers, redisClientGames) {
         this.connection = conn;
         this.token = token;
-
         this.connection.on('message', this.newWinner.bind(this));
-        console.log('reached');
-        this.assignAccount();
         this.rate = rate;
-        this.pollBalance();
-        this.redisClient = redisClient;
-    }
-
-    newWinner(response) {
-        // verify data['token'] data['address'] and update redis once paid
-        var data = JSON.parse(response)
-        var transactionId = 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
-        var response = {
-          'token': this.token,
-          'pot': 100,// TODO get this value from redis 
-          'destinationAddress': data['destinationAddress'],
-          'transactionId': 'd750aa7cfdfa5c7952d242a6f120efebc675e586cca85450274c2cb4708ad43f'
-        }
-        console.log(data)
-        console.log(response)
-        this.connection.send(JSON.stringify(response));
-    }
-
-    assignAccount() {
+        this.redisClientPlayers = redisClientPlayers;
+        this.redisClientGames = redisClientGames;
+        this.btcToSatoshi = 100000000
+        this.winnersPercentage = 0.9
         const network = Network.get('testnet');
-
         const walletOptions = {
             port: 18334,
             host: "bcoin.moneygames.io",
             network: network.type,
             apiKey: 'hunterkey'
         };
+        this.walletClient = new WalletClient(walletOptions);
+        this.assignAccount();
+        this.pollBalance();
+    }
 
-        const walletClient = new WalletClient(walletOptions);
-        const wallet = walletClient.wallet('primary');
-        const options = { name: this.token };;
+    async newWinner(response) {
+        try {
+            var data = JSON.parse(response)
+            const getPlayerAsync = promisify(this.redisClientPlayers.hget).bind(this.redisClientPlayers);
+            const getGamesAsync = promisify(this.redisClientGames.hget).bind(this.redisClientGames);
+            const gameserverid = await getPlayerAsync(this.token, 'game');
+            const pot = await getGamesAsync(gameserverid, 'pot');
+            const destinationAddress = data['destinationAddress'].trim()
+            const transactionId = await this.sendWinnings(winnerAddress, pot);
+            var response = {
+                'token': this.token,
+                'gameserverid': gameserverid,
+                'pot': pot,
+                'destinationAddress': winnerAddress,
+                'transactionId': transactionId
+            }
+            this.connection.send(JSON.stringify(response));
+        } catch (err) {
+            console.log("error paying winner: " + err)
+        }
+    }
 
+    async getHouseAddress() {
+        const wallet = this.walletClient.wallet('house');
+        const result = await wallet.getAccount('default');
+        return result.receiveAddress;
+    }
+
+    async sendWinnings(address, pot) {
+        let value = pot * this.winnersPercentage
+        const wallet = this.walletClient.wallet('primary');
+        const options = {
+            rate: this.rate,
+            outputs: [{ value: value, address: address }]
+        };
+        const result = await wallet.send(options);
+        return result['hash'] // return transaction id
+    }
+
+    assignAccount() {
+        const wallet = this.walletClient.wallet('primary');
+        const options = { name: this.token };
         (async () => {
-            const result = await wallet.createAccount(this.token, options);
-            this.address = result.receiveAddress;
-            this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
-            this.connection.send(JSON.stringify({ 'token': this.token }));
-            this.redisClient.hset(this.token, "status", "unpaid");
-            this.redisClient.hset(this.token, "paymentAddress", this.address);
+            try {
+                const result = await wallet.createAccount(this.token, options);
+                this.address = result.receiveAddress;
+                this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
+                this.connection.send(JSON.stringify({ 'token': this.token }));
+                this.redisClientPlayers.hset(this.token, "status", "unpaid");
+                this.redisClientPlayers.hset(this.token, "paymentAddress", this.address);
+            } catch (err) {
+                console.log(err)
+            }
         })()
     }
 
@@ -60,36 +88,25 @@ export default class Client {
 
     async pollBalance2() {
         await this.sleep(2000);
-        this.redisClient.hset(this.token, 'status', 'paid');
-        this.connection.send(JSON.stringify({ 'status': 'paid'}));
+        this.redisClientPlayers.hset(this.token, 'status', 'paid');
+        this.connection.send(JSON.stringify({ 'status': 'paid' }));
     }
 
     pollBalance() {
-        const network = Network.get('testnet');
-
-        const walletOptions = {
-            port: 18334,
-            host: "bcoin.moneygames.io",
-            network: network.type,
-            apiKey: 'hunterkey'
-        };
-
-        const walletClient = new WalletClient(walletOptions);
-        const wallet = walletClient.wallet('primary');
-
+        const wallet = this.walletClient.wallet('primary');
         (async () => {
-            while (true) {
+            for (var i = 0; i < 60 * 60; i++) { //poll Balance 60 seconds * 60 minutes
                 const result = await wallet.getAccount(this.token);
                 if (result) {
                     if (result.balance.unconfirmed >= 15000) {
-                        this.redisClient.hset(this.token, 'status', 'paid');
-                        this.connection.send(JSON.stringify({ 'status': 'paid'}));
+                        this.redisClientPlayers.hset(this.token, 'status', 'paid');
+                        this.redisClientPlayers.hset(this.token, 'unconfirmed', result.balance.unconfirmed.toString());
+                        this.connection.send(JSON.stringify({ 'status': 'paid' }));
                         return;
                     }
                 }
-                await this.sleep(1000);
+                await this.sleep(1000); //sleep for 1 second
             }
         })()
     }
-
 }
