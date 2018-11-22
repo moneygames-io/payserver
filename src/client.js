@@ -13,7 +13,7 @@ export default class Client {
         this.redisClientPlayers = redisClientPlayers;
         this.redisClientGames = redisClientGames;
         this.btcToSatoshi = 100000000
-        this.winnersPercentage = 0.9
+        this.winnersPercentage = 0.99
         const network = Network.get('testnet');
         const walletOptions = {
             port: 18334,
@@ -33,18 +33,19 @@ export default class Client {
             const getGamesAsync = promisify(this.redisClientGames.hget).bind(this.redisClientGames);
             const gameserverid = await getPlayerAsync(this.token, 'game');
             const pot = await getGamesAsync(gameserverid, 'pot');
-            const destinationAddress = data['destinationAddress'].trim()
-            const transactionId = await this.sendWinnings(winnerAddress, pot);
+            const destinationAddress = data['destinationAddress'].trim();
+            const transactionId = await this.sendWinnings(destinationAddress, pot);
             var response = {
                 'token': this.token,
                 'gameserverid': gameserverid,
                 'pot': pot,
-                'destinationAddress': winnerAddress,
+                'destinationAddress': destinationAddress,
                 'transactionId': transactionId
             }
             this.connection.send(JSON.stringify(response));
         } catch (err) {
             console.log("error paying winner: " + err)
+            this.connection.send(JSON.stringify({'error':err}));
         }
     }
 
@@ -55,14 +56,15 @@ export default class Client {
     }
 
     async sendWinnings(address, pot) {
-        let value = pot * this.winnersPercentage
+        let value = parseInt(pot * this.winnersPercentage);
         const wallet = this.walletClient.wallet('primary');
         const options = {
             rate: this.rate,
             outputs: [{ value: value, address: address }]
         };
         const result = await wallet.send(options);
-        return result['hash'] // return transaction id
+        console.log(result);
+        return result['hash']; // return transaction id
     }
 
     assignAccount() {
