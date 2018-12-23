@@ -5,25 +5,43 @@ import { promisify } from 'util'
 
 
 export default class Client {
-    constructor(conn, token, rate, redisClientPlayers, redisClientGames) {
+    constructor(conn, token, redisClientPlayers, redisClientGames) {
         this.connection = conn;
         this.token = token;
         this.connection.on('message', this.newWinner.bind(this));
-        this.rate = rate;
         this.redisClientPlayers = redisClientPlayers;
         this.redisClientGames = redisClientGames;
-        this.btcToSatoshi = 100000000
+        this.connection.send(JSON.stringify({ 'token': this.token }));
         this.winnersPercentage = 0.99
-        const network = Network.get('testnet');
-        const walletOptions = {
-            port: 18334,
-            host: "bcoin.moneygames.io",
-            network: network.type,
-            apiKey: 'hunterkey'
-        };
-        this.walletClient = new WalletClient(walletOptions);
-        this.assignAccount();
-        this.pollBalance();
+        this.btcToSatoshi = 100000000
+        this.rate = 15000
+        if (process.env.PSTAG == 'mainnet') {
+            const network = Network.get('mainnet');
+            const walletOptions = {
+                port: network.port,
+                host: "mainnet.moneygames.io",
+                network: network.type,
+                apiKey: 'f0c5d427ff4a53701ada1117e4face2a0f7ec8e39d775f9764307ddf67b1ab53',
+                ssl: 'true'
+            };
+            this.walletClient = new WalletClient(walletOptions);
+            this.assignAccount();
+            this.pollBalance();
+        } else if (process.env.PSTAG == 'testnet') {
+            const network = Network.get('testnet');
+            const walletOptions = {
+                port: network.port,
+                host: "bcoin.moneygames.io",
+                network: network.type,
+                apiKey: 'hunterkey'
+            };
+            this.walletClient = new WalletClient(walletOptions);
+            this.assignAccount();
+            this.pollBalance();
+        } else //PSTAG should equal 'free'
+        {
+            this.pollBalanceFree();
+        }
     }
 
     async newWinner(response) {
@@ -45,7 +63,7 @@ export default class Client {
             this.connection.send(JSON.stringify(response));
         } catch (err) {
             console.log("error paying winner: " + err)
-            this.connection.send(JSON.stringify({'error':err}));
+            this.connection.send(JSON.stringify({ 'error': err }));
         }
     }
 
@@ -75,7 +93,6 @@ export default class Client {
                 const result = await wallet.createAccount(this.token, options);
                 this.address = result.receiveAddress;
                 this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
-                this.connection.send(JSON.stringify({ 'token': this.token }));
                 this.redisClientPlayers.hset(this.token, "status", "unpaid");
                 this.redisClientPlayers.hset(this.token, "paymentAddress", this.address);
             } catch (err) {
@@ -88,9 +105,9 @@ export default class Client {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async pollBalance2() {
-        await this.sleep(2000);
+    async pollBalanceFree() {
         this.redisClientPlayers.hset(this.token, 'status', 'paid');
+        this.redisClientPlayers.hset(this.token, 'unconfirmed', '0');
         this.connection.send(JSON.stringify({ 'status': 'paid' }));
     }
 

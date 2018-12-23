@@ -27,7 +27,7 @@ class Payserver {
 
     newCustomer(connection) {
         let token = this.generateNewToken(8);
-        this.clients[token] = new Client(connection, token, this.getRate(), this.redisClientPlayers, this.redisClientGames);
+        this.clients[token] = new Client(connection, token, this.redisClientPlayers, this.redisClientGames);
     }
 
     generateNewToken(n) {
@@ -36,10 +36,6 @@ class Payserver {
         for (var i = 0; i < n; i++)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
-    }
-
-    getRate() {
-        return 15000;
     }
 }
 
