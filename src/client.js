@@ -18,7 +18,7 @@ export default class Client {
         if (process.env.PSTAG == 'mainnet') {
             const network = Network.get('mainnet');
             const walletOptions = {
-                port: network.port,
+                port: network.walletPort,
                 host: "mainnet.moneygames.io",
                 network: network.type,
                 apiKey: 'f0c5d427ff4a53701ada1117e4face2a0f7ec8e39d775f9764307ddf67b1ab53',
@@ -30,11 +30,12 @@ export default class Client {
         } else if (process.env.PSTAG == 'testnet') {
             const network = Network.get('testnet');
             const walletOptions = {
-                port: network.port,
+                port: network.walletPort,
                 host: "bcoin.moneygames.io",
                 network: network.type,
                 apiKey: 'hunterkey'
             };
+            console.log(walletOptions)
             this.walletClient = new WalletClient(walletOptions);
             this.assignAccount();
             this.pollBalance();
@@ -87,6 +88,8 @@ export default class Client {
 
     assignAccount() {
         const wallet = this.walletClient.wallet('primary');
+        console.log("WALLET CLIENT: "+this.walletClient)
+        console.log("WALLET: "+wallet)
         const options = { name: this.token };
         (async () => {
             try {
@@ -96,7 +99,7 @@ export default class Client {
                 this.redisClientPlayers.hset(this.token, "status", "unpaid");
                 this.redisClientPlayers.hset(this.token, "paymentAddress", this.address);
             } catch (err) {
-                console.log(err)
+              console.log("ERROR: "+err)
             }
         })()
     }
