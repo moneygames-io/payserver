@@ -27,7 +27,7 @@ class Payserver {
 
     newCustomer(connection) {
         let token = this.generateNewToken(8);
-        this.clients[token] = new Client(connection, token, this.redisClientPlayers, this.redisClientGames);
+        this.clients[token] = new Client(connection, token, this);
     }
 
     generateNewToken(n) {
