@@ -32,7 +32,6 @@ export default class Client {
         this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
         this.payserver.redisClientPlayers.hset(this.token, "status", "unpaid");
         this.payserver.redisClientPlayers.hset(this.token, "paymentAddress", this.address);
-        this.assignAccount();
         for (var i = 0; i < 60 * 60; i++) { //poll Balance 60 seconds * 60 minutes
             const result = await this.payserver.wallet.getAccount(this.token);
             if (result) {
