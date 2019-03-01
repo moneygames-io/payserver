@@ -24,10 +24,6 @@ class Payserver {
             };
             this.walletClient = new WalletClient(walletOptions);
             this.wallet = this.walletClient.wallet('primary');
-            (async () => {
-                const result = await this.wallet.getAccount('default');
-                this.defaultAccount = result;
-            })();
         }
     }
 
@@ -37,7 +33,7 @@ class Payserver {
             console.log("connected " + name)
         });
         client.on('error', function(err) {
-            console.log('Something went wrong ', err)
+            //console.log('Something went wrong ', err)
         });
         return client
     }
@@ -54,10 +50,6 @@ class Payserver {
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
     }
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 (async () => {
