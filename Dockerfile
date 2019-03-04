@@ -7,6 +7,7 @@ RUN apt-get -y install nodejs
 WORKDIR app
 
 COPY bcoin-test.crt /usr/local/share/ca-certificates
+COPY bcoin-main.crt /usr/local/share/ca-certificates
 COPY package.json .
 COPY .babelrc .
 
