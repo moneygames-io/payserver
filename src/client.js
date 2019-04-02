@@ -27,20 +27,18 @@ export default class Client {
     async pollBalance() {
         const name = this.token
         const options = { name: this.token };
-        const result = await this.payserver.wallet.createAccount(name, options);
-        this.address = result.receiveAddress;
+        var account = await this.payserver.wallet.createAccount(name, options);
+        this.address = account.receiveAddress;
         this.connection.send(JSON.stringify({ 'bitcoinAddress': this.address }));
         this.payserver.redisClientPlayers.hset(this.token, "status", "unpaid");
         this.payserver.redisClientPlayers.hset(this.token, "paymentAddress", this.address);
         for (var i = 0; i < 60 * 60; i++) { //poll Balance 60 seconds * 60 minutes
-            const result = await this.payserver.wallet.getAccount(this.token);
-            if (result) {
-                if (result.balance.unconfirmed >= 15000) {
+            account = await this.payserver.wallet.getAccount(this.token);
+            if (account && account.balance.unconfirmed >= 1) {
                     this.payserver.redisClientPlayers.hset(this.token, 'status', 'paid');
-                    this.payserver.redisClientPlayers.hset(this.token, 'unconfirmed', result.balance.unconfirmed.toString());
+                    this.payserver.redisClientPlayers.hset(this.token, 'unconfirmed', account.balance.unconfirmed.toString());
                     this.connection.send(JSON.stringify({ 'status': 'paid' }));
                     return;
-                }
             }
             await this.sleep(1000); //sleep for 1 second
         }
